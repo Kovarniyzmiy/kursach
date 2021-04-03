@@ -356,7 +356,7 @@ int main()
     srand(time(0));
 
     while (1) {
-        double mistakeprob = 0.2;
+        double mistakeprob = 0.1;
         int mistake = 1;
         string inp;
         string localstr;
