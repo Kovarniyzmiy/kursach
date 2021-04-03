@@ -4,14 +4,26 @@
 #include <string>
 #include <bitset>
 #include <ctime> 
+#include <random> 
 #include <cstdlib>
 using namespace std;
 
 int getRandomNumber(int min, int max)
 {
-    static const double fraction = 1.0 / (static_cast<double>(RAND_MAX) + 1.0);
+    static const double fraction = 0.2 / (static_cast<double>(RAND_MAX) + 1.0);
     return static_cast<int>(rand() * fraction * (max - min + 1) + min);
 }
+
+int getProb(double p)
+{
+    std::random_device rd{};
+    std::mt19937 rng{ rd() };
+    std::bernoulli_distribution d(p);
+
+    return d(rng);
+}
+
+
 
 vector<vector<int>> HMultiplyMatrix = {
     {1, 0, 0, 0, 0, 0, 1, 1, 0, 1},
@@ -314,9 +326,10 @@ vector<int> parity(vector<int> msg, vector<vector<int>> matrix, double mistakepr
     
     vector<double> llrvector = LLR(msg, mistakeprob);
 
-    for (int i = 0; i < getRandomNumber(0, mistake); i++) {
-        int ran = getRandomNumber(0, llrvector.size() - 1);
-        llrvector[ran] = llrvector[ran]*-1;
+    for (int i = 0; i < llrvector.size(); i++) {
+        if (getProb(0.2)) {
+            llrvector[i] = llrvector[i] * -1;
+        };
     }
     
     vector<int> juu = SPA(matrix, llrvector);
@@ -341,6 +354,7 @@ vector<int> division(vector<int> str, vector<vector<int>> matrix, double mistake
 int main()
 {
     srand(time(0));
+
     while (1) {
         double mistakeprob = 0.2;
         int mistake = 1;
