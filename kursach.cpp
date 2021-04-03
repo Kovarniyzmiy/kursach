@@ -34,6 +34,14 @@ vector<vector<int>> HTMatrix = {
     {0, 0, 1, 0, 1}
 };
 
+vector<vector<int>> HMatrix = {
+    {1, 1, 0, 1, 1, 0, 0, 1, 0, 0},
+    {0, 1, 1, 0, 1, 1, 1, 0, 0, 0},
+    {0, 0, 0, 1, 0, 0, 0, 1, 1, 1},
+    {1, 1, 0, 0, 0, 1, 1, 0, 1, 0},
+    {0, 0, 1, 0, 0, 1, 0, 1, 0, 1}
+};
+
 
 vector<int> str_to_vec(string str) {
     vector<int> msg_vector(str.begin(), str.end());
@@ -65,6 +73,22 @@ vector<int> MultiplyMatrix(vector<int> slice, vector<vector<int>> matrix) {
         ret.push_back(counter %2);
     }
     return ret;
+}
+
+
+vector<double> LLR(vector<int> msg, double probability) {
+    vector<double> retvec(msg.size());
+    double prob1 = log(probability / (1 - probability));
+    double prob0 = log((1 - probability) / probability);
+    for (int i = 0; i < msg.size(); i++) {
+        if (msg[i] == 0) {
+            retvec[i] = prob0;
+        }
+        else {
+            retvec[i] = prob1;
+        };
+    }
+    return retvec;
 }
 
 
@@ -132,84 +156,179 @@ string multiply(vector<int> str, vector<vector<int>> matrix) {
 }
 
 
-vector<int> parity(vector<int> msg, vector<vector<int>> matrix) {
-
-    vector<int> compare = { 0, 0, 0, 0, 0 };
-    for (int i = 0; i < getRandomNumber(0, 2); i++) {
-        int ran = getRandomNumber(0, msg.size() - 1);
-        msg[ran] = 0;
+double prod(vector<double> str) {
+    double ret = 1;
+    for (int i = 0; i < str.size(); i++) {
+        ret = ret * str[i];
     }
-    bool stop = true;
-    while (stop) {
-        vector<int> encoded = MultiplyMatrix(msg, matrix);
-
-        if (encoded == compare) {
-            vector<int> vecslice = slice(msg, 5, 10);
-            stop = false;
-            return vecslice;
-        }
-        else {
-            bool br = false;
-            vector<int> encoded = MultiplyMatrix(msg, matrix);
-            for (int j = 0; j < matrix.size(); j++) {
-                if (matrix[j][0] == encoded[0] &&
-                    matrix[j][1] == encoded[1] &&
-                    matrix[j][2] == encoded[2] &&
-                    matrix[j][3] == encoded[3] &&
-                    matrix[j][4] == encoded[4]) {
-                    if (msg[j] == 1) {
-                        msg[j] = 0;
-                    }
-                    else {
-                        msg[j] = 1;
-                    }
-                    br = true;
-                    cout << "corrected bit number " << j << endl;
-                }
-                if (br) {
-                    break;
-                }
-            }
-            for (int j = 0; j < matrix.size(); j++) {
-                for (int i = 0; i < matrix.size(); i++) {
-                    if ((matrix[j][0] + matrix[i][0]) % 2 == encoded[0] &&
-                        (matrix[j][1] + matrix[i][1]) % 2 == encoded[1] &&
-                        (matrix[j][2] + matrix[i][2]) % 2 == encoded[2] &&
-                        (matrix[j][3] + matrix[i][3]) % 2 == encoded[3] &&
-                        (matrix[j][4] + matrix[i][4]) % 2 == encoded[4]) {
-                        if (msg[j] == 1) {
-                            msg[j] = 0;
-                        }
-                        else {
-                            msg[j] = 1;
-                        }
-                        if (msg[i] == 1) {
-                            msg[i] = 0;
-                        }
-                        else {
-                            msg[i] = 1;
-                        }
-                        br = true;
-                        cout << "corrected bits number " << j << ", " << i << endl;
-                    }
-                    if (br) {
-                        break;
-                    }
-                }
-                if (br) {
-                    break;
-                }
-            }
-        }
-    };
+    return ret;
 }
 
-vector<int> division(vector<int> str, vector<vector<int>> matrix) {
+
+vector<double> sum(vector<vector<double>> matr) {
+    vector<double> ret(matr[0].size());
+    for (int i = 0; i < matr[0].size(); i++)
+    {
+        ret[i] = 0;
+        for (int j = 0; j < matr.size(); j++)
+        {
+            ret[i] += matr[j][i];
+        }
+    }
+    return ret;
+}
+
+
+vector<vector<double>> calc_E(vector<vector<double>> M) {
+    vector<vector<double>> Hmirr(HMatrix.size());
+    vector<vector<double>> E = M;
+
+    for (int i = 0; i < HMatrix.size(); i++)
+    {
+        for (int j = 0; j < HMatrix[0].size(); j++)
+        {
+            if (HMatrix[i][j] == 0) 
+            {
+                Hmirr[i].push_back(double(1));
+            }
+            else 
+            {
+                Hmirr[i].push_back(double(0));
+            }
+        }
+    }
+
+    for (int i = 0; i < M.size(); i++) {
+        for (int j = 0; j < M[0].size(); j++) {
+            M[i][j] = M[i][j] / 2;
+            M[i][j] = tanh(M[i][j]) + Hmirr[i][j];
+        }
+    }
+    for (int i = 0; i < M.size(); i++) {
+		for (int j = 0; j < M[0].size(); j++) {
+            if (HMatrix[i][j] != 0) {
+                E[i][j] = log((1 + prod(M[i]) / M[i][j]) / (1 - prod(M[i]) / M[i][j]));
+            }
+        }
+    }
+
+    return E;
+}
+
+
+vector<double> calc_l(vector<vector<double>> E, vector<double> msg) {
+    vector<double> sumE = sum(E);
+    for (int i = 0; i < sumE.size(); i++)
+    {
+        sumE[i] += msg[i];
+    }
+    
+    return sumE;
+}
+
+vector<int> tobool(vector<double> msg) {
+    vector<int> ret(msg.size());
+    for (int i = 0; i < msg.size(); i++)
+    {
+        if (msg[i] > 0) 
+        {
+            ret[i] = 0;
+        }
+        else 
+        {
+            ret[i] = 1;
+        }
+    }
+    return ret;
+}
+
+
+vector<vector<double>> calc_M(vector<vector<double>> M, vector<vector<double>> E, vector<double> msg)
+{
+    bool stop = false; 
+    vector<int> compare = { 0, 0, 0, 0, 0 };
+    for (int j = 0; j < HMatrix.size(); j++) {
+        for (int i = 0; i < HMatrix[0].size(); i++) {
+            if (HMatrix[j][i] != 0) {
+                double counter = 0;
+                for (int k = 0; k < E.size(); k++) {
+                    counter += E[k][i];
+                }
+                M[j][i] = counter - E[j][i] + msg[i];
+            }
+        }
+    }
+    return M;
+}
+
+
+vector<int> SPA(vector<vector<int>> matrixx, vector<double> msg) {
+    vector<int> compare = { 0, 0, 0, 0, 0 };
+    vector<vector<int>> matrix = HMatrix;
+
+    vector<vector<double>> M(matrix.size());
+    vector<double> v(matrix[0].size());
+    bool stop = false;
+
+    for (int i = 0; i < matrix.size(); i++)
+    {
+        for (int j = 0; j < matrix[0].size(); j++)
+        {
+            v[j] = msg[j] * matrix[i][j];
+        }
+        M[i] = v;
+    }
+
+    int I = 0;
+    int Imax = 1000;
+    while (!stop) {
+
+        vector<vector<double>> E = calc_E(M);
+        vector<double> l = calc_l(E, msg);
+
+        vector<int> boolL = tobool(l);
+        vector<int> encoded = MultiplyMatrix(boolL, HTMatrix);
+
+        if (encoded == compare)
+        {
+            vector<int> vecslice = slice(boolL, 5, 10);
+            stop = true;
+            return vecslice;
+        }
+        else
+        {
+            M = calc_M(M, E, msg);
+            I++;
+        }
+        if (I < Imax) {
+            vector<int> vecslice = slice(boolL, 5, 10);
+            stop = true;
+            return vecslice;
+        }
+    }
+}
+
+
+vector<int> parity(vector<int> msg, vector<vector<int>> matrix, double mistakeprob, int mistake) {
+    vector<int> compare = { 0, 0, 0, 0, 0 };
+    
+    vector<double> llrvector = LLR(msg, mistakeprob);
+
+    for (int i = 0; i < getRandomNumber(0, mistake); i++) {
+        int ran = getRandomNumber(0, llrvector.size() - 1);
+        llrvector[ran] = llrvector[ran]*-1;
+    }
+    
+    vector<int> juu = SPA(matrix, llrvector);
+    return juu;
+}
+
+vector<int> division(vector<int> str, vector<vector<int>> matrix, double mistakeprob, int mistake) {
     vector<int> compare = { 0, 0, 0, 0, 0 };
     vector<int> retvec;
     for (int i = 0; i < str.size() / 10; i++) {
         vector<int> vectorlet = revec(slice(str, i * 10, 10 + i * 10));
-        vector<int> vecslice = parity(vectorlet, matrix);
+        vector<int> vecslice = parity(vectorlet, matrix, mistakeprob, mistake);
         retvec.insert(retvec.end(), vecslice.begin(), vecslice.end());
 
     }
@@ -218,10 +337,13 @@ vector<int> division(vector<int> str, vector<vector<int>> matrix) {
 }
 
 
+
 int main()
 {
     srand(time(0));
     while (1) {
+        double mistakeprob = 0.2;
+        int mistake = 1;
         string inp;
         string localstr;
         cout << "enter your string or stop to quit" << endl;
@@ -234,15 +356,12 @@ int main()
             vector<int> vector_bin_string = str_to_vec(bin_string);
 
             string encoded = multiply(vector_bin_string, HMultiplyMatrix);
-
             vector<int> encoded_vector = str_to_vec(encoded);
 
-            vector<int> checkedvec = division(encoded_vector, HTMatrix);
+            vector<int> checkedvec = division(encoded_vector, HTMatrix, mistakeprob, mistake);
 
             string decoded = vec_to_str(checkedvec);
-            cout << bit_to_ch(decoded) << endl;
+            cout << "encoded: " << bit_to_ch(decoded) << endl;
         }
-
-    
     }
 }
