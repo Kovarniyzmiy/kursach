@@ -327,7 +327,7 @@ vector<int> parity(vector<int> msg, vector<vector<int>> matrix, double mistakepr
     vector<double> llrvector = LLR(msg, mistakeprob);
 
     for (int i = 0; i < llrvector.size(); i++) {
-        if (getProb(0.2)) {
+        if (getProb(mistakeprob)) {
             llrvector[i] = llrvector[i] * -1;
         };
     }
